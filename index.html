@@ -388,7 +388,7 @@ html.auth[data-view="termo"] #termoApp,html.auth[data-view="ficha"] #fichaApp,ht
   <div class="bar">
     <div class="bar-sec">
       <button type="button" class="btn quiet js-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="nl">Novo termo</span><span class="ns">Novo</span></button>
-      <button type="button" class="btn quiet js-hist" title="Histórico dos últimos 7 dias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36"/><path d="M3 4v5h5"/><path d="M12 7.5V12l3 2"/></svg><span class="t-hist">Histórico</span></button>
+      <button type="button" class="btn quiet js-hist" title="Histórico de termos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36"/><path d="M3 4v5h5"/><path d="M12 7.5V12l3 2"/></svg><span class="t-hist">Histórico</span></button>
       <button type="button" class="btn quiet js-example"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15v4M17 17h4"/></svg><span class="t-long">Termo exemplo</span><span class="t-short">Exemplo</span></button>
     </div>
     <div class="bar-pri">
@@ -503,7 +503,7 @@ html.auth[data-view="termo"] #termoApp,html.auth[data-view="ficha"] #fichaApp,ht
       </div>
       <div class="bar-sec">
         <button type="button" class="btn quiet js-new"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span class="nl">Novo termo</span><span class="ns">Novo</span></button>
-        <button type="button" class="btn quiet js-hist" title="Histórico dos últimos 7 dias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36"/><path d="M3 4v5h5"/><path d="M12 7.5V12l3 2"/></svg><span class="t-hist">Histórico</span></button>
+        <button type="button" class="btn quiet js-hist" title="Histórico de termos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36"/><path d="M3 4v5h5"/><path d="M12 7.5V12l3 2"/></svg><span class="t-hist">Histórico</span></button>
         <button type="button" class="btn quiet js-example"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l1.8 4.7 4.7 1.8-4.7 1.8L12 16l-1.8-4.7L5.5 9.5l4.7-1.8z"/><path d="M19 15v4M17 17h4"/></svg><span class="t-long">Termo exemplo</span><span class="t-short">Exemplo</span></button>
         <button type="button" class="btn quiet js-logout" title="Sair" aria-label="Sair"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="m16 17 5-5-5-5"/><path d="M21 12H9"/></svg><span class="t-out">Sair</span></button>
       </div>
@@ -566,7 +566,7 @@ html.auth[data-view="termo"] #termoApp,html.auth[data-view="ficha"] #fichaApp,ht
   </div>
 </main>
 <footer class="credit">
-  <small>© 2026 Antunes Tech v.1.1</small>
+  <small>© 2026 Antunes Tech v.1.2</small>
 </footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -1541,23 +1541,40 @@ F('ordemList').addEventListener('click',e=>{
 
 /* ---------- validação ---------- */
 const touched={}; let showAll=false;
+/* Campos obrigatórios (pedido da cliente em 18/11/2026). Só contam quando estão visíveis:
+   campos de outro tipo de ficha, de pessoas além da quantidade escolhida ou que dependem
+   de outra resposta (ex.: "O que ficou negociado" só com abono = Sim) ficam de fora sozinhos.
+   Não obrigatórios: Valores (exceto aluguel), Contas de consumo, Cláusulas especiais, prazo e IPTU do abono,
+   "Haverá abono?", Motivo da mudança, "Possuem restrições?", ordem 2º a 5º da PJ. */
+const REQ=['endImovel','aluguel',
+  'garantia','caucaoParc','caucaoMeses','seguroFianca','seguroForma','pintura','indice','prazo','despValor','despPor','despDias','finalidade','cienteDoc',
+  'abonoDesc',
+  'relato','animais','animaisQual','animaisQtd','criancas','criancasQtd','bike','obs',
+  'corretor','reservaData','locAvisado','avisadoPara','avisadoPor',
+  ...Array.from({length:MAXP},(_,k)=>PF.map(f=>'p'+(k+1)+'_'+f)).flat(),
+  'pjNome','pjRamo','pjTel','pjEmail','pjEnd','pjResid','pjResidContato','pjFat','pjComp','pjSocios',
+  'apontamento','ref1Nome','ref1Tel','ref2Nome','ref2Tel','detalhes','avisadoAnalise'];
+const REQ_LBL={ref1Tel:'Telefone da referência 1', ref2Tel:'Telefone da referência 2', pjTel:'Telefone da empresa', pjEmail:'E-mail da empresa'};
+function reqLabel(id){
+  if(REQ_LBL[id]) return REQ_LBL[id];
+  const l=form.querySelector('label[for="fp_'+id+'"]'), txt=l ? l.textContent.trim() : id, m=/^p(\d)_/.exec(id);
+  return m ? txt+' ('+m[1]+'ª pessoa)' : txt;
+}
+REQ.concat('menores').forEach(id=>{ const l=form.querySelector('label[for="fp_'+id+'"]'); if(l) l.classList.add('req'); });
 function checks(){
   const p=[]; const add=(id,label,msg)=>p.push({id,label,msg}); const t=tipo();
   if(!t) add('tipoBox','Tipo de ficha','Escolha se a ficha é residencial ou comercial (PJ).');
-  if(!val('endImovel')) add('endImovel','Endereço do imóvel','Informe o endereço do imóvel.');
-  if(!val('aluguel')) add('aluguel','Valor do aluguel','Informe o valor do aluguel.');
-  const telOk=(id,label)=>{ const d=A.onlyDigits(val(id)); if(!d) add(id,label,'Informe um telefone com DDD.'); else if(d.length<10) add(id,label,'Telefone incompleto. Inclua o DDD.'); };
-  const mailOk=(id,label)=>{ const m=val(id); if(m && shown(F(id)) && !/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(m)) add(id,label,'E-mail inválido. Confira o endereço.'); };
-  if(t==='residencial'){
-    if(!val('p1_nome')) add('p1_nome','Nome da 1ª pessoa','Informe o nome completo.');
-    telOk('p1_tel','Telefone da 1ª pessoa');
-    for(let i=1;i<=qtd();i++){ mailOk('p'+i+'_email','E-mail da '+i+'ª pessoa'); const d=A.onlyDigits(val('p'+i+'_tel')); if(i>1 && d && d.length<10) add('p'+i+'_tel','Telefone da '+i+'ª pessoa','Telefone incompleto. Inclua o DDD.'); }
-  } else if(t==='comercial'){
-    if(!val('pjNome')) add('pjNome','Nome / razão social','Informe o nome da empresa.');
-    telOk('pjTel','Telefone da empresa'); mailOk('pjEmail','E-mail da empresa');
-  }
-  [['ref1Tel','Telefone da referência 1'],['ref2Tel','Telefone da referência 2']].forEach(([id,l])=>{ const d=A.onlyDigits(val(id)); if(t && d && d.length<10) add(id,l,'Telefone incompleto. Inclua o DDD.'); });
-  return p;
+  REQ.forEach(id=>{
+    const el=F(id); if(!el || !shown(el)) return;
+    const v=val(id), lbl=reqLabel(id);
+    if(el.dataset.mask==='tel'){ const d=A.onlyDigits(v); if(!d) add(id,lbl,'Informe um telefone com DDD.'); else if(d.length<10) add(id,lbl,'Telefone incompleto. Inclua o DDD.'); }
+    else if(el.type==='email'){ if(!v) add(id,lbl,'Informe o e-mail.'); else if(!/^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/.test(v)) add(id,lbl,'E-mail inválido. Confira o endereço.'); }
+    else if(!v) add(id,lbl, el.tagName==='SELECT' ? 'Escolha uma opção.' : 'Preencha este campo.');
+  });
+  /* menores de 18: obrigatório quando a negociação diz que há crianças */
+  if(t==='residencial' && val('criancas')==='sim' && !val('menores')) add('menores','Nome dos moradores menores de 18 anos','Informe o nome das crianças que vão morar no imóvel.');
+  /* lista na ordem em que os campos aparecem na tela */
+  return p.sort((a,b)=> box(a.id).compareDocumentPosition(box(b.id)) & Node.DOCUMENT_POSITION_FOLLOWING ? -1 : 1);
 }
 const box=id=> id==='tipoBox' ? F('tipoBox') : F(id).closest('.f');
 let lastIds=[];
@@ -2008,7 +2025,7 @@ function fillExample(){
     fp_despValor: res?'450,00':'900,00', fp_despPor:'inquilino', fp_despDias:'30', fp_finalidade: res?'Residência da família':'Restaurante', fp_cienteDoc:'sim',
     fp_abono:'sim', fp_abonoPrazo:'60 dias', fp_abonoIptu:'isento', fp_abonoDesc: res?'Dois meses de abono para a pintura interna, com adendo assinado pelas partes.':'Carência de dois meses para obras de adequação, com adendo.',
     fp_relato: res?'Interessados pediram desconto no primeiro aluguel e prazo para a pintura. Proprietário aceitou o abono de dois meses.':'Empresa pediu carência para obras e ficou com o seguro fiança no boleto.',
-    fp_animais: res?'sim':'nao', fp_animaisQual: res?'Cachorro':'', fp_animaisQtd: res?'1':'', fp_criancas: res?'sim':'nao', fp_criancasQtd: res?'1':'', fp_bike:'nao',
+    fp_animais: res?'sim':'nao', fp_animaisQual: res?'Cachorro':'', fp_animaisQtd: res?'1':'', fp_criancas: res?'sim':'nao', fp_criancasQtd: res?'1':'', fp_bike:'nao', fp_obs: res?'Visitaram o imóvel duas vezes antes de fechar.':'Precisam de acesso para descarga pela manhã.',
     fp_corretor:'diego', fp_reservaData:hoje, fp_locAvisado:'sim', fp_avisadoPara:'Sr. Exemplo (proprietário)', fp_avisadoPor:'diego',
     fp_motivo: res?'Mais perto do trabalho':'Ampliação do negócio', fp_restricoes:'nao',
     fp_ref1Nome:'Ana Exemplo Referência', fp_ref1Tel:'(11) 98888-1111', fp_ref2Nome:'Bruno Exemplo Referência', fp_ref2Tel:'(11) 97777-2222',
